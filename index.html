@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Configuratore Riabilitazione</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .scene-item { margin-bottom: 5px; }
+    .toggle-buttons { margin-top: 10px; }
+    .toggle-buttons button { margin-right: 5px; padding: 5px 10px; }
+    .toggle-buttons button.active { background-color: #4CAF50; color: white; }
+  </style>
+</head>
+<body>
+  <h1>Configuratore di Riabilitazione</h1>
+  
+  <!-- Sezione per selezionare le scene -->
+  <h2>Seleziona le scene</h2>
+  <div id="sceneList">
+    <!-- Verrà popolata in automatico -->
+  </div>
+
+  <!-- Selezione del lato Left/Right -->
+  <h2>Scegli lato</h2>
+  <div class="toggle-buttons">
+    <button id="leftBtn" class="active">Left</button>
+    <button id="rightBtn">Right</button>
+  </div>
+  
+  <!-- Visualizzazione dell'ordine delle scene selezionate -->
+  <h2>Ordine delle scene selezionate</h2>
+  <ul id="selectedScenes"></ul>
+
+  <!-- Bottone per generare il JSON e l'URL -->
+  <button id="generateBtn">Genera Link Configurazione</button>
+  
+  <!-- Visualizzazione del JSON e del link -->
+  <h2>Output</h2>
+  <textarea id="jsonOutput" rows="10" cols="50" readonly placeholder="Qui verrà mostrato il JSON generato"></textarea>
+  <br>
+  <input type="text" id="linkOutput" style="width: 80%;" readonly placeholder="Link unico (da copiare nell’app Unity)">
+  <br>
+  <button id="shortenBtn">Abbrevia Link (opzionale)</button>
+  <br>
+  <input type="text" id="shortLinkOutput" style="width: 80%;" readonly placeholder="Link abbreviato">
+
+  <script>
+    // Lista base delle scene (senza suffisso)
+    const scenes = [
+      "1HitBallHandBack", "2HitBallHandPalm", "3HitBallElbowFlex", "4HitBallElbowExt",
+      "5DragSoap", "6DragBall", "7DragClothElbowFlex", "8ReachingKneeTable",
+      "9ReachingHighTarget", "10ReachingLateral", "11DragBottle", "12MoveCan",
+      "13BringSoap", "140penBox", "15DragBox", "16DragJournal", "17PourBottle",
+      "18Clean Table", "19RollingPin", "20FlipGlass", "21PressPhoneKey",
+      "22PlayPiano", "23Hammer", "24RoundSpoon", "25Plug-Unplug", "26GraspCubes",
+      "27OpenJar", "28Handle", "29Writing", "30Sprayer", "31ThrowBallLow",
+      "32ThrowBallHigh", "33ToothBrush"
+    ];
+
+    // Stato attuale
+    let selectedSide = "Left";
+    let selectedScenes = [];
+
+    // Popola la lista delle scene
+    const sceneListDiv = document.getElementById("sceneList");
+    scenes.forEach((scene, index) => {
+      const div = document.createElement("div");
+      div.className = "scene-item";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.id = "scene" + index;
+      checkbox.value = scene;
+      checkbox.addEventListener("change", updateSelectedScenes);
+      
+      const label = document.createElement("label");
+      label.htmlFor = "scene" + index;
+      label.innerText = scene;
+      
+      div.appendChild(checkbox);
+      div.appendChild(label);
+      sceneListDiv.appendChild(div);
+    });
+
+    // Gestione dei bottoni per scegliere il lato
+    document.getElementById("leftBtn").addEventListener("click", () => {
+      selectedSide = "Left";
+      document.getElementById("leftBtn").classList.add("active");
+      document.getElementById("rightBtn").classList.remove("active");
+      updateSelectedScenesDisplay();
+    });
+    document.getElementById("rightBtn").addEventListener("click", () => {
+      selectedSide = "Right";
+      document.getElementById("rightBtn").classList.add("active");
+      document.getElementById("leftBtn").classList.remove("active");
+      updateSelectedScenesDisplay();
+    });
+
+    // Aggiorna l'elenco delle scene selezionate
+    function updateSelectedScenes() {
+      selectedScenes = [];
+      const checkboxes = document.querySelectorAll("input[type=checkbox]");
+      checkboxes.forEach(cb => {
+        if(cb.checked) {
+          selectedScenes.push(cb.value);
+        }
+      });
+      updateSelectedScenesDisplay();
+    }
+
+    // Visualizza l'elenco delle scene selezionate con il suffisso
+    function updateSelectedScenesDisplay() {
+      const ul = document.getElementById("selectedScenes");
+      ul.innerHTML = "";
+      selectedScenes.forEach(scene => {
+        const li = document.createElement("li");
+        li.innerText = scene + selectedSide;
+        ul.appendChild(li);
+      });
+    }
+
+    // Funzione per generare il JSON e costruire il link unico
+    document.getElementById("generateBtn").addEventListener("click", () => {
+      if(selectedScenes.length === 0) {
+        alert("Seleziona almeno una scena!");
+        return;
+      }
+      const config = {
+        scenes: selectedScenes.map(scene => scene + selectedSide)
+      };
+      const jsonStr = JSON.stringify(config, null, 2);
+      document.getElementById("jsonOutput").value = jsonStr;
+      
+      // Codifica in Base64 per evitare problemi con caratteri speciali
+      const encodedJson = btoa(jsonStr);
+      
+      // Costruisci il link che punta a config.html passando il JSON come parametro 'data'
+      // Sostituisci 'tuo-username' e 'riabilitazione-config' con i tuoi dati GitHub Pages
+      const baseUrl = window.location.origin + window.location.pathname.replace("index.html", "");
+      const fullLink = baseUrl + "config.html?data=" + encodeURIComponent(encodedJson);
+      
+      document.getElementById("linkOutput").value = fullLink;
+    });
+	// Funzione per abbreviare il link utilizzando l'API di is.gd
+	document.getElementById("shortenBtn").addEventListener("click", () => {
+	const longUrl = document.getElementById("linkOutput").value;
+	if (!longUrl) {
+	alert("Genera prima il link!");
+	return;
+	}
+	// Effettua una richiesta GET a is.gd per ottenere il link abbreviato
+	fetch("https://is.gd/create.php?format=json&url=" + encodeURIComponent(longUrl))
+	.then(response => response.json())
+    .then(data => {
+	if (data.shorturl) {
+        document.getElementById("shortLinkOutput").value = data.shorturl;
+      } else {
+        alert("Errore nella abbreviazione del link.");
+      }
+    })
+    .catch(err => {
+      console.error("Errore nell'API di abbreviazione:", err);
+      alert("Errore nella chiamata al servizio di abbreviazione.");
+    });
+});
+
+  </script>
+</body>
+</html>

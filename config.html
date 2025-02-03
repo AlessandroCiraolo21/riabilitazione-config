@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Configurazione JSON</title>
+</head>
+<body>
+  <script>
+    // Funzione per ottenere i parametri della query string
+    function getQueryParam(param) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(param);
+    }
+
+    const dataParam = getQueryParam("data");
+    if (dataParam) {
+      try {
+        // Decodifica Base64
+        const decodedJson = atob(dataParam);
+        // Imposta l'header per restituire il JSON (questo è utile se la pagina viene richiesta da Unity)
+        // Nota: su GitHub Pages non puoi modificare gli header, ma Unity può comunque leggere il contenuto testuale.
+        document.body.innerHTML = "<pre>" + decodedJson + "</pre>";
+      } catch (error) {
+        document.body.innerHTML = "Errore nella decodifica del JSON: " + error;
+      }
+    } else {
+      document.body.innerHTML = "Nessun dato trovato nella query string.";
+    }
+  </script>
+</body>
+</html>
